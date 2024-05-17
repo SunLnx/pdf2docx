@@ -76,7 +76,8 @@ class Paths(Collection):
                              min_svg_gap_dy:float=15,
                              min_w:float=2,
                              min_h:float=2,
-                             clip_image_res_ratio:float=3.0):
+                             clip_image_res_ratio:float=3.0,
+                             ignore_image:bool=False):
         '''Convert paths to iso-oriented shapes or images. The semantic type of path is either
         table/text style or vector graphic. This method is to:
         * detect svg regions -> exist at least one non-iso-oriented path
@@ -135,6 +136,7 @@ class Paths(Collection):
 
             # otherwise, it's a svg
             else:
+                if ignore_image: continue
                 images.append(ie.clip_page_to_dict(bbox=fitz.Rect(bbox),
                                                    rm_image=True,
                                                    clip_image_res_ratio=clip_image_res_ratio))

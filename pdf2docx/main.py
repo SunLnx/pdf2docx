@@ -1,7 +1,8 @@
 '''Entry for ``pdf2docx`` command line.'''
 import logging
 from .converter import Converter
-
+from cProfile import Profile
+from pstats import Stats, SortKey
 
 class PDF2DOCX:
     '''Command line interface for ``pdf2docx``.'''
@@ -36,14 +37,20 @@ class PDF2DOCX:
             if end: end -= 1
             if pages: pages = [i-1 for i in pages]
 
-        cv = Converter(pdf_file, password)
-        try:
-            cv.convert(docx_file, start, end, pages, **kwargs)
-        except Exception as e:
-            logging.error(e)
-        finally:
-            cv.close()
 
+        with Profile() as profile:
+            cv = Converter(pdf_file, password)
+            try:
+                cv.convert(docx_file, start, end, pages, **kwargs)
+            except Exception as e:
+                logging.error(e)
+            finally:
+                cv.close()
+
+            # print profile information
+            stats = Stats(profile)
+            stats.sort_stats(SortKey.TIME)
+            stats.print_stats(20)
 
     @staticmethod
     def debug(pdf_file:str,

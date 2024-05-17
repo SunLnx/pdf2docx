@@ -11,6 +11,7 @@ from docx import Document
 
 from .page.Page import Page
 from .page.Pages import Pages
+import time
 
 # check PyMuPDF version
 # 1.19.0 <= v <= 1.23.8, or v>=1.23.16
@@ -79,7 +80,7 @@ class Converter:
             'debug'                          : False,  # plot layout if True
             'ocr'                            : 0,      # ocr status: 0 - no ocr; 1 - to do ocr; 2 - ocr-ed pdf
             'ignore_page_error'              : True,   # not break the conversion process due to failure of a certain page if True
-            'multi_processing'               : False,  # convert pages with multi-processing if True
+            'multi_processing'               : True,  # convert pages with multi-processing if True
             'cpu_count'                      : 0,      # working cpu count when convert pages with multi-processing
             'min_section_height'             : 20.0,   # The minimum height of a valid section.
             'connected_border_tolerance'     : 0.5,    # two borders are intersected if the gap lower than this value
@@ -106,7 +107,8 @@ class Converter:
             'extract_stream_table'           : False,  # don't consider stream table when extracting tables
             'parse_lattice_table'            : True,   # whether parse lattice table or not; may destroy the layout if set False
             'parse_stream_table'             : True,   # whether parse stream table or not; may destroy the layout if set False
-            'delete_end_line_hyphen'         : False   # delete hyphen at the end of a line
+            'delete_end_line_hyphen'         : False,   # delete hyphen at the end of a line
+            'ignore_image'                   : False,  # ignore image if True
         }
 
     # -----------------------------------------------------------------------
@@ -140,7 +142,7 @@ class Converter:
             pages (list, optional): Range of page indexes to parse. Defaults to None.
         '''
         logging.info(self._color_output('[1/4] Opening document...'))
-
+        startat = time.time()
         # encrypted pdf ?
         if self._fitz_doc.needs_pass:
             if not self.password:
@@ -158,6 +160,7 @@ class Converter:
         for i in page_indexes:
             self._pages[i].skip_parsing = False
 
+        logging.info(f'load_pages: {time.time()-startat:.2f}s')
         return self
     
 
@@ -165,15 +168,16 @@ class Converter:
         '''Step 2 of converting process: analyze whole document, e.g. page section,
         header/footer and margin.'''
         logging.info(self._color_output('[2/4] Analyzing document...'))
-        
+        startat = time.time()
         self._pages.parse(self.fitz_doc, **kwargs)
+        logging.info(f'parse_document: {time.time()-startat:.2f}s')
         return self
 
     
     def parse_pages(self, **kwargs):
         '''Step 3 of converting process: parse pages, e.g. paragraph, image and table.'''
         logging.info(self._color_output('[3/4] Parsing pages...'))
-
+        startat = time.time()
         pages = [page for page in self._pages if not page.skip_parsing]
         num_pages = len(pages)
         for i, page in enumerate(pages, start=1):
@@ -187,6 +191,7 @@ class Converter:
                 else:
                     raise ConversionException(f'Error when parsing page {pid}: {e}')
 
+        logging.info(f'parse_pages: {time.time()-startat:.2f}s')
         return self
 
 
@@ -198,7 +203,7 @@ class Converter:
             kwargs (dict, optional): Configuration parameters.
         '''
         logging.info(self._color_output('[4/4] Creating pages...'))
-
+        startat = time.time()
         # check parsed pages
         parsed_pages = list(filter(
             lambda page: page.finalized, self._pages
@@ -231,6 +236,7 @@ class Converter:
 
         # save docx
         docx_file.save(filename_or_stream)
+        logging.info(f'make_docx: {time.time()-startat:.2f}s')
 
 
     # -----------------------------------------------------------------------

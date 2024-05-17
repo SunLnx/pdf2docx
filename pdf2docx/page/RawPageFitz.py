@@ -114,6 +114,8 @@ class RawPageFitz(RawPage):
         '''
         # ignore image if ocr-ed pdf: get ocr-ed text only
         if settings['ocr']==2: return []
+
+        if settings['ignore_image']: return []
         
         return ImagesExtractor(self.page_engine).extract_images(settings['clip_image_res_ratio'])
 
@@ -126,7 +128,8 @@ class RawPageFitz(RawPage):
             settings['min_svg_gap_dy'], 
             settings['min_svg_w'], 
             settings['min_svg_h'], 
-            settings['clip_image_res_ratio'])
+            settings['clip_image_res_ratio'],
+            settings['ignore_image'])
     
 
     @debug_plot('Source Paths')
